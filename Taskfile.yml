@@ -30,6 +30,16 @@ tasks:
       - task: app:up
       - task: busy:up
 
+  task3:
+    desc: "Task 3 setup state: the app's db crash-loops on a misspelled env var (run after task1 or task2)"
+    cmds:
+      - task: app:break
+
+  task3:undo:
+    desc: Put the app back to its healthy Task 1 state
+    cmds:
+      - task: app:fix
+
   reset:
     desc: Remove all study containers and volumes (keeps pulled images so the next setup is fast)
     cmds:

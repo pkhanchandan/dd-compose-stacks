@@ -3,6 +3,7 @@ version: '3'
 vars:
   PROJECT: nginx-golang-postgres
   COMPOSE: docker compose -p {{.PROJECT}} -f vendor/nginx-golang-postgres/compose.yaml -f compose.study.yaml
+  FAULT: '{{.COMPOSE}} -f compose.fault.yaml'
 
 tasks:
   pull:
@@ -21,8 +22,27 @@ tasks:
       - for i in 1 2 3 4 5; do curl -fsS -o /dev/null http://localhost/ && sleep 1; done
       - echo "App is up at http://localhost (adminer at http://localhost:8081)"
 
+  break:
+    desc: "Task 3: recreate the stack with a misspelled db env var, so db crash-loops and backend/proxy never start"
+    cmds:
+      # The fault only shows on an uninitialised database, so start from a fresh volume.
+      # (Containers and volume only; the network stays because adminer is attached to it.)
+      - '{{.COMPOSE}} rm -sfv'
+      - docker volume rm -f {{.PROJECT}}_db-data
+      # Expected to fail: Compose reports that db never became healthy.
+      - '{{.FAULT}} up -d --wait-timeout 60 || true'
+      - '{{.COMPOSE}} ps -a'
+
+  fix:
+    desc: "Undo Task 3: recreate the stack with the correct config (fresh volume)"
+    cmds:
+      - '{{.COMPOSE}} rm -sfv'
+      - docker volume rm -f {{.PROJECT}}_db-data
+      - task: up
+
   down:
     desc: Remove the stack, its volumes, and the adminer container
     cmds:
-      - '{{.COMPOSE}} down -v --remove-orphans'
+      # adminer first: it is attached to the project network, which blocks the network's removal.
       - docker rm -f adminer >/dev/null 2>&1 || true
+      - '{{.COMPOSE}} down -v --remove-orphans'

@@ -16,6 +16,8 @@ All apps are **unmodified [awesome-compose](https://github.com/docker/awesome-co
 task prewarm   # once per machine: pull and build everything (several GB)
 task task1     # Task 1 state
 task task2     # Task 2 state (includes Task 1 state)
+task task3     # Task 3 state: break the Task 1 app (run after task1 or task2)
+task task3:undo  # put the app back to healthy
 task status    # check what's set up
 task reset     # between participants: remove all containers and volumes (keeps images)
 ```
@@ -51,6 +53,19 @@ Overlays:
 - `compose.wordpress.yaml` and `compose.gitea.yaml` move ports that would clash (80 to 8082, 3000 to 3001). They also set `restart: "no"` so the stacks stay stopped if Docker Desktop restarts. Both databases get a healthcheck, so they finish initialising before being stopped. Gitea's db is pinned to `postgres:17-alpine` (same Postgres 18 issue as above), and WordPress stops with SIGTERM. Together these mean every stopped container shows a clean `Exited (0)`.
 
 **Note on dangling images:** on the containerd image store (the default in current Docker Desktop), rebuilding an image doesn't leave a `<none>` dangling image behind. That's why this setup uses unused images instead.
+
+### Task 3: diagnose a failing service (`task task3`)
+
+This recreates the Task 1 app with overlay `compose.fault.yaml`, which misspells one env var on `db`: `POSTGRES_PASSWORD_FILE` becomes `POSTGRES_PASWORD_FILE`. It starts from a fresh db volume, because the fault only shows on an uninitialised database. Everything else (Task 2 stacks, adminer) stays as it is. It takes about 2 seconds.
+
+**Answer key:**
+
+| Question | What the participant should find |
+|---|---|
+| Which service? | `db`, restarting over and over. `backend` and `proxy` stay at `Created` (they wait for a healthy db), so http://localhost doesn't respond. |
+| What went wrong? | The `db` logs repeat `Error: Database is uninitialized and superuser password is not specified.` |
+| Config | The container's environment shows `POSTGRES_PASWORD_FILE` (misspelled). |
+| Compose file | The typo is in `compose.fault.yaml`, the third of the project's compose files. `vendor/.../compose.yaml` itself is correct. |
 
 ## License
 

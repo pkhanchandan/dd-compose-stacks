@@ -1,0 +1,9 @@
+# Task 3 fault overlay, layered on top of compose.study.yaml.
+# Misspells the db's password variable (POSTGRES_PASSWORD_FILE -> POSTGRES_PASWORD_FILE).
+# On a fresh volume, Postgres then refuses to initialise, logs a clear error, and exits non-zero.
+# `restart: always` (upstream) makes it crash-loop; backend waits for a healthy db, so it and proxy never start.
+services:
+  db:
+    environment: !override
+      - POSTGRES_DB=example
+      - POSTGRES_PASWORD_FILE=/run/secrets/db-password
