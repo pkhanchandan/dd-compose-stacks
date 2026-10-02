@@ -1,0 +1,23 @@
+version: '3'
+
+vars:
+  COMPOSE: docker compose
+
+tasks:
+  pull:
+    desc: Pull and build images ahead of a session
+    cmds:
+      - '{{.COMPOSE}} pull --ignore-buildable'
+      - '{{.COMPOSE}} build'
+
+  up:
+    desc: Start the include-based project (app + monitoring + adminer) and send some traffic so the logs have content
+    cmds:
+      - '{{.COMPOSE}} up -d --build --wait --wait-timeout 180'
+      - for i in 1 2 3 4 5; do curl -fsS -o /dev/null http://localhost/ && sleep 1; done
+      - echo "App at http://localhost, Grafana at http://localhost:3000, Prometheus at http://localhost:9090, adminer at http://localhost:8081"
+
+  down:
+    desc: Remove the project and its volumes
+    cmds:
+      - '{{.COMPOSE}} down -v --remove-orphans'

@@ -18,6 +18,7 @@ task task1     # Task 1 state
 task task2     # Task 2 state (includes Task 1 state)
 task task3     # Task 3 state: break the Task 1 app (run after task1 or task2)
 task task3:undo  # put the app back to healthy
+task task4     # Task 4 state: one project built with `include` (resets everything else first)
 task status    # check what's set up
 task reset     # between participants: remove all containers and volumes (keeps images)
 ```
@@ -64,6 +65,22 @@ This recreates the Task 1 app with overlay `compose.fault.yaml`, which misspells
 | What went wrong? | The `db` logs repeat `Error: Database is uninitialized and superuser password is not specified.` |
 | Config | The container's environment shows `POSTGRES_PASWORD_FILE` (misspelled). |
 | Compose file | The typo is in `compose.fault.yaml`, the third of the project's compose files. `vendor/.../compose.yaml` itself is correct. |
+
+### `03-included-project`: a project built with `include` (`task task4`)
+
+`03-included-project/compose.yaml` is the only file Task 4 adds that defines services. It assembles one project, `app-with-monitoring`, from two samples plus one service of its own:
+
+| Service(s) | Comes from |
+|---|---|
+| `proxy`, `backend`, `db` | `include` of the vendored nginx-golang-postgres sample, with `01-fullstack-app/compose.study.yaml` as its override (healthchecks, `postgres:17`) |
+| `prometheus`, `grafana` | `include` of the vendored prometheus-grafana sample, with `compose.prometheus-pin.yaml` as its override |
+| `adminer` (http://localhost:8081, preset to the `db` server) | defined directly in `compose.yaml` |
+
+It reuses the samples already in `01-fullstack-app/vendor` and `02-busy-environment/vendor`, so nothing is copied twice. It uses the same ports and container names as Tasks 1 and 2, which is why `task task4` runs `task reset` first.
+
+Things a participant may notice:
+- `docker compose ls` and the container labels list only `03-included-project/compose.yaml` as the project's config file. The included files don't appear.
+- `prometheus` and `grafana` keep the fixed `container_name` from the upstream sample, so unlike the other four containers they don't get the `app-with-monitoring-` prefix.
 
 ## License
 

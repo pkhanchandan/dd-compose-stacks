@@ -1,0 +1,6 @@
+# Include override for awesome-compose/prometheus-grafana.
+# Upstream uses an unpinned `prom/prometheus`. Prometheus 3 rejects the sample's config
+# (Alertmanager api v1) and crash-loops, so pin the last 2.x release.
+services:
+  prometheus:
+    image: prom/prometheus:v2.55.1
