@@ -27,7 +27,7 @@ task reset     # between participants: remove all containers and volumes (keeps 
 
 ## What each setup state contains
 
-### `01-fullstack-app`: run my application (`task task1`)
+### 1. Run my application (`task task1`)
 
 | What | Source |
 |---|---|
@@ -39,7 +39,7 @@ Overlay `compose.study.yaml`:
 - adds healthchecks to `backend` and `proxy` (upstream only has one on `db`), so every service shows a health status
 - pins `db` to `postgres:17`. The upstream sample uses an unpinned `postgres`, which no longer starts with 18+ because of a data-directory change.
 
-### `02-busy-environment`: why is Docker taking up resources? (`task task2`)
+### 2. Why is Docker taking up resources? (`task task2`)
 
 | What | Source |
 |---|---|
@@ -53,7 +53,7 @@ Overlays:
 - `compose.monitoring.yaml` adds the worker, capped with `cpus: 1.5` so the test laptop doesn't overheat. It also pins `prom/prometheus:v2.55.1`, because Prometheus 3 rejects the sample's config.
 - `compose.wordpress.yaml` and `compose.gitea.yaml` move ports that would clash (80 to 8082, 3000 to 3001). They also set `restart: "no"` so the stacks stay stopped if Docker Desktop restarts. Both databases get a healthcheck, so they finish initialising before being stopped. Gitea's db is pinned to `postgres:17-alpine` (same Postgres 18 issue as above), and WordPress stops with SIGTERM. Together these mean every stopped container shows a clean `Exited (0)`.
 
-### Task 3: diagnose a failing service (`task task3`)
+### 3. Diagnose a failing service (`task task3`)
 
 This recreates the Task 1 app with overlay `compose.fault.yaml`, which misspells one env var on `db`: `POSTGRES_PASSWORD_FILE` becomes `POSTGRES_PASWORD_FILE`. It starts from a fresh db volume, because the fault only shows on an uninitialised database. Everything else (Task 2 stacks, adminer) stays as it is. It takes about 2 seconds.
 
@@ -66,7 +66,7 @@ This recreates the Task 1 app with overlay `compose.fault.yaml`, which misspells
 | Config | The container's environment shows `POSTGRES_PASWORD_FILE` (misspelled). |
 | Compose file | The typo is in `compose.fault.yaml`, the third of the project's compose files. `vendor/.../compose.yaml` itself is correct. |
 
-### `03-included-project`: a project built with `include` (`task task4`)
+### 4. A project built with `include` (`task task4`)
 
 `03-included-project/compose.yaml` is the only file Task 4 adds that defines services. It assembles one project, `app-with-monitoring`, from two samples plus one service of its own:
 
