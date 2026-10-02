@@ -1,0 +1,44 @@
+version: '3'
+
+includes:
+  app:
+    taskfile: 01-fullstack-app/Taskfile.yml
+    dir: 01-fullstack-app
+  busy:
+    taskfile: 02-busy-environment/Taskfile.yml
+    dir: 02-busy-environment
+
+tasks:
+  default:
+    cmds:
+      - task --list
+
+  prewarm:
+    desc: Pull and build everything once, so sessions never wait on downloads
+    cmds:
+      - task: app:pull
+      - task: busy:pull
+
+  task1:
+    desc: "Task 1 setup state: a healthy 3-service stack plus one standalone container"
+    cmds:
+      - task: app:up
+
+  task2:
+    desc: "Task 2 setup state: Task 1 state, plus stopped stacks, unused large images, and a CPU-hungry container"
+    cmds:
+      - task: app:up
+      - task: busy:up
+
+  reset:
+    desc: Remove all study containers and volumes (keeps pulled images so the next setup is fast)
+    cmds:
+      - task: busy:down
+      - task: app:down
+
+  status:
+    desc: Show what is currently set up
+    cmds:
+      - docker compose ls -a
+      - docker ps -a --format 'table {{"{{"}}.Names{{"}}"}}\t{{"{{"}}.Status{{"}}"}}'
+      - docker system df

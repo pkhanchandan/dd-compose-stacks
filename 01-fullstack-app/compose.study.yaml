@@ -1,0 +1,29 @@
+# Study overlay for awesome-compose/nginx-golang-postgres.
+# The vendored sample is unmodified. This file only adds what the sample is missing
+# so Docker Desktop can show health for every service.
+name: nginx-golang-postgres
+
+services:
+  db:
+    # Upstream uses an unpinned `postgres` image. Postgres 18 moved its data directory,
+    # which breaks the sample's volume mount, so pin the last version it works with.
+    image: postgres:17
+
+  backend:
+    # The backend image is the sample's `builder` stage (golang:alpine), so busybox wget is available.
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8000/"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+      start_interval: 2s
+
+  proxy:
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost/"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+      start_interval: 2s

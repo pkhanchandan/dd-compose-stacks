@@ -1,0 +1,20 @@
+# Study overlay for awesome-compose/wordpress-mysql.
+# Port 80 is taken by the Task 1 app, so WordPress moves to 8082.
+# restart "no": these containers are meant to stay stopped, even if Docker Desktop restarts.
+services:
+  wordpress:
+    ports: !override
+      - 8082:80
+    restart: "no"
+    # The image stops Apache with SIGWINCH (graceful), which times out and gets killed (exit 137).
+    # SIGTERM stops it right away, so the container reads as cleanly stopped.
+    stop_signal: SIGTERM
+  db:
+    restart: "no"
+    # Healthcheck so `up --wait` waits for MariaDB to finish initialising before we stop it.
+    # (The init server listens only on a socket, so a TCP ping passes only once the real server is up.)
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-psomewordpress", "--silent"]
+      interval: 3s
+      retries: 20
+      start_period: 60s

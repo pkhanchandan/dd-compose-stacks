@@ -1,0 +1,28 @@
+version: '3'
+
+vars:
+  PROJECT: nginx-golang-postgres
+  COMPOSE: docker compose -p {{.PROJECT}} -f vendor/nginx-golang-postgres/compose.yaml -f compose.study.yaml
+
+tasks:
+  pull:
+    desc: Pull and build images ahead of a session
+    cmds:
+      - '{{.COMPOSE}} pull --ignore-buildable'
+      - '{{.COMPOSE}} build'
+      - docker pull adminer:latest
+
+  up:
+    desc: Start the stack (proxy, backend, db), the standalone adminer container, and send some traffic so the logs have content
+    cmds:
+      - '{{.COMPOSE}} up -d --build --wait --wait-timeout 180'
+      # Standalone container (not part of the Compose project), attached to the project network so it can reach the db.
+      - docker start adminer >/dev/null 2>&1 || docker run -d --name adminer --restart unless-stopped -p 8081:8080 --network {{.PROJECT}}_default adminer:latest
+      - for i in 1 2 3 4 5; do curl -fsS -o /dev/null http://localhost/ && sleep 1; done
+      - echo "App is up at http://localhost (adminer at http://localhost:8081)"
+
+  down:
+    desc: Remove the stack, its volumes, and the adminer container
+    cmds:
+      - '{{.COMPOSE}} down -v --remove-orphans'
+      - docker rm -f adminer >/dev/null 2>&1 || true

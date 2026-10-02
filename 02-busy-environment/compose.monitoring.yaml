@@ -1,0 +1,14 @@
+# Study overlay for awesome-compose/prometheus-grafana.
+services:
+  prometheus:
+    # Upstream uses an unpinned `prom/prometheus`. Prometheus 3 rejects the sample's config
+    # (Alertmanager api v1) and crash-loops, so pin the last 2.x release.
+    image: prom/prometheus:v2.55.1
+
+  # The one invented service: a busy loop that is the "culprit" in Task 2.
+  # Two loops, capped at 1.5 CPUs, so it clearly tops the Resources view without overheating the test laptop.
+  worker:
+    image: busybox:1.37
+    command: ["sh", "-c", "for i in 1 2; do (while :; do :; done) & done; wait"]
+    cpus: 1.5
+    restart: unless-stopped

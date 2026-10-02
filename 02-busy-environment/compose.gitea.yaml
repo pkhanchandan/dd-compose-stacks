@@ -1,0 +1,19 @@
+# Study overlay for awesome-compose/gitea-postgres.
+# Port 3000 is taken by Grafana, so Gitea moves to 3001.
+# restart "no": these containers are meant to stay stopped, even if Docker Desktop restarts.
+services:
+  gitea:
+    ports: !override
+      - 3001:3000
+    restart: "no"
+  db:
+    # Upstream uses an unpinned `postgres:alpine`. Postgres 18 moved its data directory,
+    # which breaks the sample's volume mount, so pin the last version it works with.
+    image: postgres:17-alpine
+    restart: "no"
+    # Healthcheck so `up --wait` waits for Postgres to finish initialising before we stop it.
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "gitea"]
+      interval: 3s
+      retries: 20
+      start_period: 60s

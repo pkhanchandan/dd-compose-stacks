@@ -1,0 +1,42 @@
+version: '3'
+
+vars:
+  MONITORING: docker compose -p prometheus-grafana -f vendor/prometheus-grafana/compose.yaml -f compose.monitoring.yaml
+  WORDPRESS: docker compose -p wordpress-mysql -f vendor/wordpress-mysql/compose.yaml -f compose.wordpress.yaml
+  GITEA: docker compose -p gitea-postgres -f vendor/gitea-postgres/compose.yaml -f compose.gitea.yaml
+  # Large images nothing uses. (Rebuilds don't leave <none> dangling images on the containerd
+  # image store, the default in current Docker Desktop, so we use unused images instead.)
+  UNUSED_IMAGES: node:22 python:3.12
+
+tasks:
+  pull:
+    desc: Pull images ahead of a session
+    cmds:
+      - '{{.MONITORING}} pull'
+      - '{{.WORDPRESS}} pull'
+      - '{{.GITEA}} pull'
+      - for img in {{.UNUSED_IMAGES}}; do docker pull -q $img; done
+
+  up:
+    desc: Add stopped stacks, an unused large image, and a running stack with a CPU-hungry worker
+    cmds:
+      # Stopped stacks: start them once (so they initialise volumes and use disk), then stop them.
+      - '{{.WORDPRESS}} up -d --wait --wait-timeout 180'
+      # Stop the app before its db so everything exits cleanly (code 0) instead of being killed (137).
+      - '{{.WORDPRESS}} stop wordpress'
+      - '{{.WORDPRESS}} stop -t 30'
+      - '{{.GITEA}} up -d --wait --wait-timeout 180'
+      - '{{.GITEA}} stop gitea'
+      - '{{.GITEA}} stop -t 30'
+      # Large images nothing uses.
+      - for img in {{.UNUSED_IMAGES}}; do docker pull -q $img; done
+      # Running stack plus the culprit.
+      - '{{.MONITORING}} up -d --wait --wait-timeout 180'
+      - echo "Grafana at http://localhost:3000, Prometheus at http://localhost:9090. The worker is now burning CPU."
+
+  down:
+    desc: Remove all three stacks and their volumes
+    cmds:
+      - '{{.MONITORING}} down -v --remove-orphans'
+      - '{{.WORDPRESS}} down -v --remove-orphans'
+      - '{{.GITEA}} down -v --remove-orphans'
