@@ -52,8 +52,6 @@ Overlays:
 - `compose.monitoring.yaml` adds the worker, capped with `cpus: 1.5` so the test laptop doesn't overheat. It also pins `prom/prometheus:v2.55.1`, because Prometheus 3 rejects the sample's config.
 - `compose.wordpress.yaml` and `compose.gitea.yaml` move ports that would clash (80 to 8082, 3000 to 3001). They also set `restart: "no"` so the stacks stay stopped if Docker Desktop restarts. Both databases get a healthcheck, so they finish initialising before being stopped. Gitea's db is pinned to `postgres:17-alpine` (same Postgres 18 issue as above), and WordPress stops with SIGTERM. Together these mean every stopped container shows a clean `Exited (0)`.
 
-**Note on dangling images:** on the containerd image store (the default in current Docker Desktop), rebuilding an image doesn't leave a `<none>` dangling image behind. That's why this setup uses unused images instead.
-
 ### Task 3: diagnose a failing service (`task task3`)
 
 This recreates the Task 1 app with overlay `compose.fault.yaml`, which misspells one env var on `db`: `POSTGRES_PASSWORD_FILE` becomes `POSTGRES_PASWORD_FILE`. It starts from a fresh db volume, because the fault only shows on an uninitialised database. Everything else (Task 2 stacks, adminer) stays as it is. It takes about 2 seconds.
