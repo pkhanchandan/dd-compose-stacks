@@ -7,7 +7,8 @@ All apps are **unmodified [awesome-compose](https://github.com/docker/awesome-co
 ## Prerequisites
 
 - Docker Desktop (Compose v2.24+ for the `!override` tag)
-- [Task](https://taskfile.dev/installation/) (`brew install go-task`)
+- [Task](https://taskfile.dev/installation/) (macOS: `brew install go-task`, Windows: `winget install Task.Task`)
+- For the GUI v2 tasks: `jq` (macOS: `brew install jq`, Linux: `sudo apt install jq`, Windows: `winget install jqlang.jq`). On Windows you also need [Git for Windows](https://gitforwindows.org/), which provides Git Bash.
 - Free ports: 80, 3000, 3001, 8081, 8082, 9090
 
 ## Usage
@@ -24,6 +25,23 @@ task reset     # between participants: remove all containers and volumes (keeps 
 ```
 
 `task task2` takes under a minute once the machine is prewarmed. Run it a few minutes before the task starts, so Docker Desktop already has some CPU history for the worker.
+
+## Enabling GUI v2
+
+```sh
+task gui:v2        # set "PreferredGUI": "v2" in Docker Desktop's settings-store.json
+task gui:restore   # put settings-store.json back to how it was before gui:v2
+```
+
+The scripts are in `settings-scripts/` and can also be run directly.
+
+| OS | Settings file |
+|---|---|
+| macOS | `~/Library/Group Containers/group.com.docker/settings-store.json` |
+| Linux | `~/.docker/desktop/settings-store.json` |
+| Windows | `%APPDATA%\Docker\settings-store.json` |
+
+On Windows, run the tasks from a Git Bash terminal. From PowerShell or cmd, `bash` may resolve to WSL, which would edit a settings file inside Linux instead of the Windows one.
 
 ## NOTICE
 The directories under */vendor/ are unmodified copies of samples from

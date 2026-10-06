@@ -57,6 +57,16 @@ tasks:
       - task: busy:down
       - task: app:down
 
+  gui:v2:
+    desc: Switch Docker Desktop to GUI v2 (quit Docker Desktop first; backs up current settings)
+    cmds:
+      - bash ./settings-scripts/set-docker-gui.sh
+
+  gui:restore:
+    desc: Restore Docker Desktop's settings from before gui:v2 (quit Docker Desktop first)
+    cmds:
+      - bash ./settings-scripts/restore-docker-gui.sh
+
   status:
     desc: Show what is currently set up
     cmds:
