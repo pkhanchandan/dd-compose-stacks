@@ -33,11 +33,6 @@ task reset     # between participants: remove all containers and volumes (keeps 
 |---|---|
 | Compose stack `nginx-golang-postgres`: `proxy` (nginx, http://localhost), `backend` (Go), `db` (Postgres) | [awesome-compose/nginx-golang-postgres](https://github.com/docker/awesome-compose/tree/master/nginx-golang-postgres) |
 | Standalone container `adminer` (DB browser, http://localhost:8081), attached to the stack's network | official `adminer` image, started with `docker run` |
-| Request lines in the `backend` logs | the sample logs every request; the Taskfile sends 5 requests, and the healthchecks keep adding more |
-
-Overlay `compose.study.yaml`:
-- adds healthchecks to `backend` and `proxy` (upstream only has one on `db`), so every service shows a health status
-- pins `db` to `postgres:17`. The upstream sample uses an unpinned `postgres`, which no longer starts with 18+ because of a data-directory change.
 
 ### 2. Why is Docker taking up resources? (`task task2`)
 
@@ -49,22 +44,9 @@ Overlay `compose.study.yaml`:
 | Stopped stack `gitea-postgres` (2 containers, Exited 0, with data volumes) | [awesome-compose/gitea-postgres](https://github.com/docker/awesome-compose/tree/master/gitea-postgres) |
 | Unused large images `node:22` and `python:3.12` (about 1.6 GB each) | official images |
 
-Overlays:
-- `compose.monitoring.yaml` adds the worker, capped with `cpus: 1.5` so the test laptop doesn't overheat. It also pins `prom/prometheus:v2.55.1`, because Prometheus 3 rejects the sample's config.
-- `compose.wordpress.yaml` and `compose.gitea.yaml` move ports that would clash (80 to 8082, 3000 to 3001). They also set `restart: "no"` so the stacks stay stopped if Docker Desktop restarts. Both databases get a healthcheck, so they finish initialising before being stopped. Gitea's db is pinned to `postgres:17-alpine` (same Postgres 18 issue as above), and WordPress stops with SIGTERM. Together these mean every stopped container shows a clean `Exited (0)`.
-
 ### 3. Diagnose a failing service (`task task3`)
 
 This recreates the Task 1 app with overlay `compose.fault.yaml`, which misspells one env var on `db`: `POSTGRES_PASSWORD_FILE` becomes `POSTGRES_PASWORD_FILE`. It starts from a fresh db volume, because the fault only shows on an uninitialised database. Everything else (Task 2 stacks, adminer) stays as it is. It takes about 2 seconds.
-
-**Answer key:**
-
-| Question | What the participant should find |
-|---|---|
-| Which service? | `db`, restarting over and over. `backend` and `proxy` stay at `Created` (they wait for a healthy db), so http://localhost doesn't respond. |
-| What went wrong? | The `db` logs repeat `Error: Database is uninitialized and superuser password is not specified.` |
-| Config | The container's environment shows `POSTGRES_PASWORD_FILE` (misspelled). |
-| Compose file | The typo is in `compose.fault.yaml`, the third of the project's compose files. `vendor/.../compose.yaml` itself is correct. |
 
 ### 4. A project built with `include` (`task task4`)
 
@@ -77,10 +59,6 @@ This recreates the Task 1 app with overlay `compose.fault.yaml`, which misspells
 | `adminer` (http://localhost:8081, preset to the `db` server) | defined directly in `compose.yaml` |
 
 It reuses the samples already in `01-fullstack-app/vendor` and `02-busy-environment/vendor`, so nothing is copied twice. It uses the same ports and container names as Tasks 1 and 2, which is why `task task4` runs `task reset` first.
-
-Things a participant may notice:
-- `docker compose ls` and the container labels list only `03-included-project/compose.yaml` as the project's config file. The included files don't appear.
-- `prometheus` and `grafana` keep the fixed `container_name` from the upstream sample, so unlike the other four containers they don't get the `app-with-monitoring-` prefix.
 
 ## License
 
